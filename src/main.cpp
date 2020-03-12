@@ -16,6 +16,9 @@ long distance = 10;
 int leftDistance = 0;
 int rightDistance = 0;
 
+int prevX = 0;
+int prevY = 0;
+
 #define MOVE 1000
 
 void setup() {
@@ -25,6 +28,7 @@ void setup() {
   radio.begin();
   radio.setPALevel(RF24_PA_MIN);   // RF24_PA_MIN ,RF24_PA_LOW, RF24_PA_HIGH, RF24_PA_MAX
   radio.setDataRate( RF24_250KBPS ); // RF24_250KBPS, RF24_1MBPS, RF24_2MBPS
+  radio.setAutoAck(1);
   
   // Set the reading pipe and start listening
   radio.openReadingPipe(0, rxAddr);
@@ -50,38 +54,38 @@ void moveTrack(int curDisL, int curDisR, int padX, int padY) {
 
   if(padX > 0) {
     if(padY > 0) {
-      speedR = abs(padX - padY);
-      speedL = padX;
+      speedL = abs(padX - padY);
+      speedR= padX;
     } else if (padY == 0) {
       speedR = padX;
       speedL = padX;
     } else {
-      speedL = abs(padX - abs(padY));
-      speedR = padX;
+      speedR = abs(padX - abs(padY));
+      speedL = padX;
     }
   } else if(padX == 0) {
     if(padY > 0) {
-      speedL = padY;
-      speedR = 0;
+      speedR = padY;
+      speedL = 0;
       way = -way;
     } else if (padY == 0) {
       speedR = 0;
       speedL = 0;
     } else {
-      speedR = abs(padY);
-      speedL = 0;
+      speedL = abs(padY);
+      speedR = 0;
       way = -way;
     }
   } else {
     if(padY > 0) {
-      speedR = abs(-padX - padY);
-      speedL = -padX;
+      speedL = abs(-padX - padY);
+      speedR = -padX;
     } else if (padY == 0) {
       speedR = -padX;
       speedL = -padX;
     } else {
-      speedL = abs(-padX - abs(padY));
-      speedR = -padX;
+      speedR = abs(-padX - abs(padY));
+      speedL = -padX;
     }
   }
   
@@ -113,6 +117,8 @@ void loop() {
     leftDistance = Serial2.parseInt();
     rightDistance = Serial2.parseInt();
     char eol = Serial2.read();
+
+    Serial.println("Distance:\t" + String(leftDistance) + " " + String(rightDistance));
   }
 
   if (Serial.available()) {
@@ -126,7 +132,11 @@ void loop() {
     radio.read(&text, sizeof(text));
     int x = getValue(text, ' ', 0).toInt();
     int y = getValue(text, ' ', 1).toInt();
-    Serial.print(String(x) + " " + String(y));
-    // moveTrack(leftDistance, rightDistance, x, y);
+    if (x != prevX || y != prevY) {
+      Serial.println("Command:\t" + String(x) + " " + String(y));
+      moveTrack(leftDistance, rightDistance, x, y);
+      prevX = x;
+      prevY = y;
+    }
   }
 }
